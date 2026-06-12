@@ -99,11 +99,17 @@ def build_agent(settings: Settings) -> DurableAgent:
     available — not from a unit test. Tests exercise :func:`build_llm` and
     :func:`format_task` directly, or substitute a fake ``DurableAgent``.
     """
+    # Only attach tools when a real LLM is configured. The no-key path uses
+    # Dapr's `conversation.echo`, which is not a real model: given tools it
+    # echoes a malformed tool call (cosmetic ERROR, workflow still completes).
+    # The wake→process→complete loop is what the demo proves; real tool use
+    # needs ANTHROPIC_API_KEY.
+    tools = [summarize_change] if settings.use_llm else []
     return DurableAgent(
         name=AGENT_NAME,
         role=AGENT_ROLE,
         instructions=list(AGENT_INSTRUCTIONS),
-        tools=[summarize_change],
+        tools=tools,
         llm=build_llm(settings),
         state=AgentStateConfig(store=StateStoreService(store_name=AGENT_STATE_STORE)),
     )

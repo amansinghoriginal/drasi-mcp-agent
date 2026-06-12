@@ -145,8 +145,10 @@ def install(agent: DurableAgent, settings: Settings) -> AgentEventState:
             if client is not None:
                 await client.aclose()
 
-        app.add_event_handler("startup", on_startup)
-        app.add_event_handler("shutdown", on_shutdown)
+        # Starlette >=1.3 removed FastAPI.add_event_handler; append directly to
+        # the router's lifecycle lists (still honored by the lifespan runner).
+        app.router.on_startup.append(on_startup)
+        app.router.on_shutdown.append(on_shutdown)
         return None
 
     agent.add_activation(hook)

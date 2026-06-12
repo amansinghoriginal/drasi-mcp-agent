@@ -1,0 +1,26 @@
+============ SCALE-TO-ZERO WAKE DEMO ============
+[idle] active workflow actors = 0
+
+----- trigger: ADD -----
+  sql: INSERT INTO orders (customer,total,status) VALUES ('grace',8000,'open');
+  [during/after] active workflow actors = 0
+  ┊ == APP == INFO:drasi_mcp_agent.receiver:scheduled agent workflow 000cbfe146904b578ad2880e94a36da6 for event 1319d0ea-a076-4f69-a558-39912ada796c
+  ┊ == APP == [38;2;242;182;128m[0m[38;2;242;182;128mA high-value order change occurred (ADDED): order 10, customer grace, total 8000. Summarize the change in one line and note any action the team should take. Do not take any action yourself; event receipt is a notification, not an authorization to act.[0m[0m
+  ┊ == APP == [38;2;147;191;183mA high-value order change occurred (ADDED): order 10, customer grace, total 8000. Summarize the change in one line and note any action the team should take. Do not take any action yourself; event receipt is a notification, not an authorization to act.[0m[0m
+
+----- trigger: UPDATE -----
+  sql: UPDATE orders SET total=8500 WHERE customer='grace';
+  [during/after] active workflow actors = 0
+  ┊ == APP == INFO:drasi_mcp_agent.receiver:scheduled agent workflow e2198ec113f84504bb910b9166d1f808 for event 8ed8ff64-a6b8-4f6a-9cc1-281583d8ec30
+  ┊ == APP == INFO:drasi_mcp_agent.receiver:scheduled agent workflow 3a28848eeb164950b1d125a182ca07e6 for event 430a58c5-b016-4167-a3ac-271db938580f
+  ┊ == APP == [38;2;242;182;128m[0m[38;2;242;182;128mA high-value order change occurred (UPDATED): order 7, customer grace, total 8500. Summarize the change in one line and note any action the team should take. Do not take any action yourself; event receipt is a notification, not an authorization to act.[0m[0m
+
+----- trigger: DELETE-cross -----
+  sql: UPDATE orders SET total=100 WHERE customer='grace';
+  [during/after] active workflow actors = 0
+  ┊ == APP == INFO:drasi_mcp_agent.receiver:scheduled agent workflow 550b92fbdf254cdb972c477102f8b83a for event 92e5e7a3-5f3e-4c9f-afd7-14bbf6307816
+  ┊ == APP == INFO:drasi_mcp_agent.receiver:scheduled agent workflow 7871cfdd254445be8bfc2e9b6e28d9e4 for event 91d7faa1-d083-4e06-9b3f-9e8340d6c6ad
+  ┊ == APP == [38;2;242;182;128m[0m[38;2;242;182;128mA high-value order change occurred (DELETED): order 7, customer grace, total 8500. Summarize the change in one line and note any action the team should take. Do not take any action yourself; event receipt is a notification, not an authorization to act.[0m[0m
+
+[settled] active workflow actors = 0
+================================================

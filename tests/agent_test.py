@@ -157,19 +157,21 @@ class _FakeDurableAgent:
         self.kwargs = kwargs
 
 
-def test_build_agent_wires_echo_llm_and_tools(monkeypatch) -> None:
+def test_build_agent_wires_echo_llm_no_tools(monkeypatch) -> None:
+    # No key → echo LLM, and NO tools (echo cannot form a valid tool call).
     monkeypatch.setattr(agent_mod, "DurableAgent", _FakeDurableAgent)
     built = build_agent(make_settings(use_llm=False))
     assert isinstance(built, _FakeDurableAgent)
     assert built.kwargs["name"] == AGENT_NAME
     assert isinstance(built.kwargs["llm"], DaprChatClient)
-    assert summarize_change in built.kwargs["tools"]
+    assert built.kwargs["tools"] == []
 
 
-def test_build_agent_picks_anthropic_when_use_llm(monkeypatch) -> None:
+def test_build_agent_picks_anthropic_and_tools_when_use_llm(monkeypatch) -> None:
     monkeypatch.setattr(agent_mod, "DurableAgent", _FakeDurableAgent)
     built = build_agent(make_settings(use_llm=True))
     assert isinstance(built.kwargs["llm"], AnthropicChatClient)
+    assert summarize_change in built.kwargs["tools"]
 
 
 # --- install / activation hook ----------------------------------------------
@@ -186,19 +188,25 @@ class _FakeRunner:
         return "wf-instance-1"
 
 
+class _FakeRouter:
+    """Stand-in for Starlette's router lifecycle lists (>=1.3 has no
+    app.add_event_handler; handlers are appended to these lists)."""
+
+    def __init__(self) -> None:
+        self.on_startup: list[Any] = []
+        self.on_shutdown: list[Any] = []
+
+
 class _FakeApp:
     """Minimal FastAPI stand-in: records routes and lifecycle handlers."""
 
     def __init__(self) -> None:
         self.routes: list[dict[str, Any]] = []
-        self.events: dict[str, list[Any]] = {}
+        self.router = _FakeRouter()
         self.state = SimpleNamespace()
 
     def add_api_route(self, path: str, endpoint: Any, *, methods: list[str]) -> None:
         self.routes.append({"path": path, "endpoint": endpoint, "methods": methods})
-
-    def add_event_handler(self, event_type: str, func: Any) -> None:
-        self.events.setdefault(event_type, []).append(func)
 
 
 class _FakeAgent:
@@ -243,8 +251,8 @@ async def test_hook_with_app_wires_route_schedule_and_lifecycle() -> None:
     assert route["methods"] == ["POST"]
 
     # 2) lifecycle handlers registered (subscription started on startup).
-    assert "startup" in app.events
-    assert "shutdown" in app.events
+    assert len(app.router.on_startup) == 1
+    assert len(app.router.on_shutdown) == 1
 
     # 3) schedule callback wired and delegates to runner.run(..., wait=False).
     assert st.schedule is not None
