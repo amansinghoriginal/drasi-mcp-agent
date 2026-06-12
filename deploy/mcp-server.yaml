@@ -1,0 +1,30 @@
+# drasi-mcp-events server config for the agent demo.
+# Run: cargo run --release --manifest-path ../drasi-mcp-events/Cargo.toml -p mcp-events-server -- --config deploy/mcp-server.yaml
+host: 127.0.0.1
+port: 8090
+authTokens:
+  - { token: devtoken, principal: agent@demo }
+eventModeling: single
+buffer: { maxEventsPerType: 10000, maxAgeMs: 600000 }
+feed:
+  kind: drasiSse
+  url: http://localhost:8081/events
+queries:
+  - id: high-value-orders
+    description: "Rows entering/leaving/changing in the high-value-orders continuous query (orders with total > 1000)"
+    payloadSchema:
+      type: object
+      properties:
+        id: { type: integer }
+        customer: { type: string }
+        total: { type: number }
+        status: { type: string }
+push: { heartbeatIntervalMs: 15000 }
+poll: { nextPollMs: 2000 }
+webhook:
+  enabled: true
+  ttlCapMs: 1800000
+  minTtlMs: 10000
+  maxSubscriptionsPerPrincipal: 16
+  allowInsecureUrls: true       # local loopback http:// callback; nonconformant w/ TLS MUST (demo only)
+  suspendAfterFailures: 5
